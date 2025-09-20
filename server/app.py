@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, request, make_response
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
-
 from models import db, Plant
 
 app = Flask(__name__)
@@ -16,12 +15,40 @@ db.init_app(app)
 
 api = Api(app)
 
+
+# -------------------------
+# Routes
+# -------------------------
 class Plants(Resource):
-    pass
+    def get(self):
+        """Index route: return all plants"""
+        plants = [p.to_dict() for p in Plant.query.all()]
+        return make_response(plants, 200)
+
+    def post(self):
+        """Create route: add a new plant"""
+        data = request.get_json()
+        new_plant = Plant(
+            name=data.get("name"),
+            image=data.get("image"),
+            price=data.get("price"),
+        )
+        db.session.add(new_plant)
+        db.session.commit()
+        return make_response(new_plant.to_dict(), 201)
+
 
 class PlantByID(Resource):
-    pass
-        
+    def get(self, id):
+        """Show route: return plant by id"""
+        plant = Plant.query.get_or_404(id)
+        return make_response(plant.to_dict(), 200)
 
-if __name__ == '__main__':
+
+# Register endpoints
+api.add_resource(Plants, "/plants")
+api.add_resource(PlantByID, "/plants/<int:id>")
+
+
+if __name__ == '_main_':
     app.run(port=5555, debug=True)
